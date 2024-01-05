@@ -101,37 +101,86 @@ def parse_snyk_health_html(html_content, package_info):
         package_info['Health Score'] = '404: Something Went Wrong'
     return package_info
 
+def scrape(package_data, package_key_name, output_file_name):
+    with open(output_file_name) as f:
+        result_data = json.load(f)
+    project_info = result_data
+    components = package_data[package_key_name]
+    for index, (package_name, package_version) in enumerate(components.items()):
+        print(f"Index: {index}")
+        if package_name in result_data:
+            print(f"------- {package_name}: PASS --------------")
+            pass
+        else:
+            print(f"------- {package_name}: START --------------")
+            package_info = {}
+            package_info["Current Version"] = package_version
+            snyk_npm_heacth_check_url_final = SNYK_NPM_HEACTH_CHECK_URL + package_name
+            response = requests.get(snyk_npm_heacth_check_url_final, headers=HEADERS)
+            if(response.status_code == 200 or response.status_code == 404):
+                package_info['component'] = package_name
+                package_info = parse_snyk_health_html(response.text, package_info)
+                project_info[package_name] = package_info
+                with open(output_file_name, 'w') as json_file:
+                    json.dump(project_info, json_file, indent=2)
+                print(f"------- {package_name}: END --------------")
+                time.sleep(5)
+            else:
+                # Wait for 5 minutes (300 seconds)
+                time.sleep(300)
+    return project_info
+
 with open('package.json') as f:
     package_data = json.load(f)
 
-with open('result.json') as f:
-    result_data = json.load(f)
+project_info = scrape(package_data, 'dependencies', 'dependencies.json')
+dependencies_table_result = generate_html_table(project_info)
 
-components = package_data['dependencies']
-project_info = result_data
-for index, (package_name, package_version) in enumerate(components.items()):
-    print(f"Index: {index}")
-    if package_name in result_data:
-        print(f"------- {package_name}: PASS --------------")
-        pass
-    else:
-        print(f"------- {package_name}: START --------------")
-        package_info = {}
-        package_info["Current Version"] = package_version
-        snyk_npm_heacth_check_url_final = SNYK_NPM_HEACTH_CHECK_URL + package_name
-        response = requests.get(snyk_npm_heacth_check_url_final, headers=HEADERS)
-        if(response.status_code == 200 or response.status_code == 404):
-            package_info['component'] = package_name
-            package_info = parse_snyk_health_html(response.text, package_info)
-            project_info[package_name] = package_info
-            with open('result.json', 'w') as json_file:
-                json.dump(project_info, json_file, indent=2)
-            print(f"------- {package_name}: END --------------")
-            time.sleep(5)
-        else:
-            # Wait for 5 minutes (300 seconds)
-            time.sleep(300)
+dev_project_info = scrape(package_data, 'devDependencies', 'dev-dependencies.json')
+dev_dependencies_table_result = generate_html_table(dev_project_info)
 
-table_result = generate_html_table(project_info)
-css = CSS(string=''' @page {size: 415mm 445.5mm;} ''')
-HTML(string=table_result).write_pdf('result.pdf', stylesheets=[css])
+html_content = f'''\
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+        <style>
+        table {{
+            width: 80%;
+            margin: 20px auto;
+            background-color: #fff;
+            border-collapse: collapse;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }}
+
+        th, td {{
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }}
+
+        th {{
+            background-color: #3498db;
+            color: #fff;
+        }}
+    </style>
+</head>
+<body>
+    <div>
+        <h2>Dependencies</h2>
+        {dependencies_table_result}
+    </div>
+    <div>
+        <h2>Dev Dependencies</h2>
+        {dev_dependencies_table_result}
+    </div>
+</body>
+</html>
+'''
+css = CSS(string=''' @page {size: 455mm 445.5mm;} ''')
+HTML(string=html_content).write_pdf('result.pdf', stylesheets=[css])
