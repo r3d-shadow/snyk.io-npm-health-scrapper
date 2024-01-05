@@ -35,25 +35,27 @@ def generate_html_table(data):
 
     for package_info in data:
         package = data[package_info]
+        try:
+            security_style = ""
+            if(package["security"] != "No known security issues"):
+                security_style = 'style="color: red;"'
+            maintenance_style = ""
+            if(package["maintenance"] == "Inactive"):
+                maintenance_style = 'style="color: red;"'
+            health_score_style = ""
+            if(eval(package["Health Score"]) < HEALTH_SCORE_THRESHOLD):
+                health_score_style = 'style="color: red;"'
+            git_stars_style = ""
+            if(convert_to_numeric_with_suffix(package["GitHub Stars"]) < GIT_STARS_THRESHOLD):
+                git_stars_style = 'style="color: red;"'
+            last_release_style = ""
+            if "years ago" in package["Last Release"] and int(package["Last Release"].split()[0]) >= LAST_RELEASE_THRESHOLD:
+                last_release_style = 'style="color: red;"'
 
-        security_style = ""
-        if(package["security"] != "No known security issues"):
-            security_style = 'style="color: red;"'
-        maintenance_style = ""
-        if(package["maintenance"] == "Inactive"):
-            maintenance_style = 'style="color: red;"'
-        health_score_style = ""
-        if(eval(package["Health Score"]) < HEALTH_SCORE_THRESHOLD):
-            health_score_style = 'style="color: red;"'
-        git_stars_style = ""
-        if(convert_to_numeric_with_suffix(package["GitHub Stars"]) < GIT_STARS_THRESHOLD):
-            git_stars_style = 'style="color: red;"'
-        last_release_style = ""
-        if "years ago" in package["Last Release"] and int(package["Last Release"].split()[0]) >= LAST_RELEASE_THRESHOLD:
-            last_release_style = 'style="color: red;"'
-
-        table += f'<tr><td>{package["component"]}</td><td>{package["Current Version"]}</td><td {health_score_style}>{package["Health Score"]}</td><td {security_style} >{package["security"]}</td><td>{package["popularity"]}</td><td {maintenance_style}>{package["maintenance"]}</td><td>{package["community"]}</td><td>{package["Latest Version"]}</td><td {git_stars_style}>{package["GitHub Stars"]}</td><td>{package["Forks"]}</td><td>{package["Contributors"]}</td><td>{package["Open Issues"]}</td><td>{package["Open PR"]}</td><td {last_release_style}>{package["Last Release"]}</td><td>{package["Last Commit"]}</td></tr>\n'
-
+            table += f'<tr><td>{package["component"]}</td><td>{package["Current Version"]}</td><td {health_score_style}>{package["Health Score"]}</td><td {security_style} >{package["security"]}</td><td>{package["popularity"]}</td><td {maintenance_style}>{package["maintenance"]}</td><td>{package["community"]}</td><td>{package["Latest Version"]}</td><td {git_stars_style}>{package["GitHub Stars"]}</td><td>{package["Forks"]}</td><td>{package["Contributors"]}</td><td>{package["Open Issues"]}</td><td>{package["Open PR"]}</td><td {last_release_style}>{package["Last Release"]}</td><td>{package["Last Commit"]}</td></tr>\n'
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            table += f'<tr><td>{package["component"]}</td><td>{package["Current Version"]}</td><td>Something Went Wrong</td></tr>\n'
     table += "</table>"
     return table
 
