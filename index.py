@@ -182,5 +182,7 @@ html_content = f'''\
 </body>
 </html>
 '''
-css = CSS(string=''' @page {size: 455mm 445.5mm;} ''')
+
+# Adjust this if there is any pdf sizing issues
+css = CSS(string=''' @page {size: 475mm 445.5mm;} ''')
 HTML(string=html_content).write_pdf('result.pdf', stylesheets=[css])
