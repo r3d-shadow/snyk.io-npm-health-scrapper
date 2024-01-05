@@ -1,0 +1,1 @@
+# snyk.io-npm-health-scrapper
